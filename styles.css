@@ -230,12 +230,14 @@ header {
   letter-spacing: -0.5px;
   background: linear-gradient(to right, #fff, #9ca3af);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .brand-name span {
   background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1315,6 +1317,7 @@ header {
   margin-bottom: 0.5rem;
   background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
