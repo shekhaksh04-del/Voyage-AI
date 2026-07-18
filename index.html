@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoyageAI - Premium AI Travel Assistant</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Load Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Load Leaflet.js Map CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+</head>
+
+<body>
+
+  <!-- Glowing Background Orbs -->
+  <div class="background-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Main Layout Container -->
+  <div class="app-container">
+
+    <!-- Header Component -->
+    <header class="glass-panel header-glass">
+      <div class="brand">
+        <div class="brand-logo">
+          <i data-lucide="compass"></i>
+        </div>
+        <div class="brand-name">Voyage<span>AI</span></div>
+      </div>
+      <div class="header-controls">
+        <!-- Live vs Simulated mode switcher -->
+        <div class="mode-toggle-container">
+          <button id="mode-simulated" class="mode-btn active sim-active">
+            <i data-lucide="cpu"></i> Simulated
+          </button>
+          <button id="mode-live" class="mode-btn">
+            <i data-lucide="zap"></i> Live Gemini
+          </button>
+        </div>
+        <!-- API Key modal trigger -->
+        <button id="api-trigger" class="api-trigger-btn">
+          <i data-lucide="key"></i> API Settings
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Workspace -->
+    <main class="main-content">
+
+      <!-- Sidebar Control Panel -->
+      <section class="glass-panel sidebar">
+        <h3 class="panel-title"><i data-lucide="sliders"></i> Planner Cockpit</h3>
+
+        <form id="planner-form" onsubmit="return false;">
+
+          <!-- Destination Input -->
+          <div class="form-group">
+            <label for="dest-input">Destination</label>
+            <div class="input-glow-wrapper">
+              <i data-lucide="map-pin"></i>
+              <input type="text" id="dest-input" placeholder="e.g., Tokyo, Paris, Cairo..." required autocomplete="off">
+            </div>
+          </div>
+
+          <!-- Duration Slider -->
+          <div class="form-group">
+            <label for="dur-input">Duration <span id="dur-val" class="duration-value">3 Days</span></label>
+            <input type="range" id="dur-input" min="1" max="10" value="3" class="range-slider">
+          </div>
+
+          <!-- Travel Style Dropdown -->
+          <div class="form-group">
+            <label for="style-input">Travel Style</label>
+            <div class="input-glow-wrapper">
+              <i data-lucide="compass"></i>
+              <select id="style-input">
+                <option value="Adventure">Adventure & Trails</option>
+                <option value="Cultural">Cultural & Historical</option>
+                <option value="Romantic">Romantic Getaway</option>
+                <option value="Solo">Solo Backpacker</option>
+                <option value="Foodie">Gastronomy & Foodie</option>
+                <option value="Family">Family Friendly</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Budget Grid Option Selector -->
+          <div class="form-group">
+            <label>Budget Level</label>
+            <div class="budget-grid">
+              <div class="budget-option">
+                <input type="radio" id="budget-tier-1" name="budget-tier" value="budget">
+                <label for="budget-tier-1" class="budget-label">
+                  <i data-lucide="wallet"></i>
+                  Budget
+                </label>
+              </div>
+              <div class="budget-option">
+                <input type="radio" id="budget-tier-2" name="budget-tier" value="moderate" checked>
+                <label for="budget-tier-2" class="budget-label">
+                  <i data-lucide="coins"></i>
+                  Moderate
+                </label>
+              </div>
+              <div class="budget-option">
+                <input type="radio" id="budget-tier-3" name="budget-tier" value="luxury">
+                <label for="budget-tier-3" class="budget-label">
+                  <i data-lucide="gem"></i>
+                  Luxury
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generate Action Button -->
+          <button type="submit" id="generate-btn" class="btn-primary">
+            <span>Formulate Itinerary</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </form>
+      </section>
+
+      <!-- Center Stage Panel -->
+      <section class="center-stage">
+
+        <!-- Unified Premium AI Search Bar Container -->
+        <div id="unified-search-container" class="search-container welcome-layout glass-panel">
+          <form id="search-form" class="search-bar-form" onsubmit="return false;">
+            <div class="search-inputs-grid">
+              <!-- Location Field -->
+              <div class="search-field location-field" id="field-location">
+                <label for="search-dest-input"><i data-lucide="map-pin"></i> Destination</label>
+                <div class="input-wrapper">
+                  <button type="button" id="gps-btn" class="gps-btn" title="Detect Current Location">
+                    <span class="gps-dot"></span>
+                    <i data-lucide="locate"></i>
+                  </button>
+                  <input type="text" id="search-dest-input" placeholder="Where to? (e.g., Goa, Tokyo, Paris...)"
+                    required autocomplete="off">
+                  <button type="button" id="voice-btn" class="voice-btn" title="Voice Search">
+                    <i data-lucide="mic"></i>
+                  </button>
+                  <button type="button" id="clear-search-btn" class="clear-btn" style="display: none;">
+                    <i data-lucide="x"></i>
+                  </button>
+                </div>
+                <!-- Autocomplete Dropdown -->
+                <div id="autocomplete-dropdown" class="autocomplete-dropdown" style="display: none;">
+                  <!-- suggestions rendered dynamically -->
+                </div>
+              </div>
+
+              <!-- Departure Date -->
+              <div class="search-field date-field">
+                <label for="search-date-dep"><i data-lucide="calendar"></i> Departure</label>
+                <input type="date" id="search-date-dep">
+              </div>
+
+              <!-- Return Date -->
+              <div class="search-field date-field">
+                <label for="search-date-ret"><i data-lucide="calendar"></i> Return</label>
+                <input type="date" id="search-date-ret">
+              </div>
+
+              <!-- Travelers -->
+              <div class="search-field select-field">
+                <label for="search-travelers"><i data-lucide="users"></i> Travelers</label>
+                <select id="search-travelers">
+                  <option value="1">1 Traveler</option>
+                  <option value="2" selected>2 Travelers</option>
+                  <option value="3">3 Travelers</option>
+                  <option value="4">4 Travelers</option>
+                  <option value="5+">5+ Travelers</option>
+                </select>
+              </div>
+
+              <!-- Action button -->
+              <div class="search-action">
+                <button type="submit" id="search-submit-btn" class="btn-search-glow">
+                  <span>Plan My Trip</span>
+                  <i data-lucide="sparkles"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick settings pills row -->
+            <div class="quick-prefs-row">
+              <div class="pref-pill">
+                <i data-lucide="compass"></i>
+                <select id="search-style">
+                  <option value="Adventure">Adventure</option>
+                  <option value="Beaches">Beaches</option>
+                  <option value="Nature">Nature</option>
+                  <option value="Historical">Historical</option>
+                  <option value="Food">Foodie</option>
+                  <option value="Shopping">Shopping</option>
+                  <option value="Honeymoon">Honeymoon</option>
+                  <option value="Family">Family Friendly</option>
+                  <option value="Weekend Trips">Weekend Trips</option>
+                </select>
+              </div>
+
+              <div class="pref-pill">
+                <i data-lucide="wallet"></i>
+                <select id="search-budget">
+                  <option value="budget">Budget Level: Low</option>
+                  <option value="moderate" selected>Budget Level: Moderate</option>
+                  <option value="luxury">Budget Level: Luxury</option>
+                </select>
+              </div>
+
+              <div class="pref-pill">
+                <i data-lucide="car"></i>
+                <select id="search-vehicle">
+                  <option value="Self Drive Car">Self Drive Car</option>
+                  <option value="Luxury SUV">Luxury SUV</option>
+                  <option value="Train/Transit">Train/Transit</option>
+                  <option value="Flight">Flight Transit</option>
+                  <option value="Electric Vehicle">Electric Vehicle</option>
+                  <option value="Scooter/Bike">Scooter/Bike</option>
+                </select>
+              </div>
+
+              <!-- Advanced filters toggle -->
+              <button type="button" id="filters-toggle-btn" class="filters-toggle-btn">
+                <i data-lucide="sliders-horizontal"></i> Advanced Filters
+              </button>
+            </div>
+
+            <!-- Expandable Advanced Filters Box -->
+            <div id="advanced-filters-panel" class="advanced-filters-panel" style="display: none;">
+              <div class="filters-grid">
+                <div class="filter-group">
+                  <label for="filter-distance">Distance Radius: <span id="val-distance">1000 km</span></label>
+                  <input type="range" id="filter-distance" min="50" max="5000" step="50" value="1000"
+                    class="range-slider">
+                </div>
+                <div class="filter-group">
+                  <label for="filter-weather">Weather</label>
+                  <select id="filter-weather">
+                    <option value="any">Any Climate</option>
+                    <option value="Sunny/Warm">Sunny & Warm</option>
+                    <option value="Cool/Snowy">Cool & Snowy</option>
+                    <option value="Pleasant">Pleasant / Mild</option>
+                    <option value="Monsoon">Monsoon / Rainy</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="filter-rating">Hotel Rating</label>
+                  <select id="filter-rating">
+                    <option value="3">3⭐ and above</option>
+                    <option value="4" selected>4⭐ and above</option>
+                    <option value="5">5⭐ Luxury Only</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="filter-duration">Duration: <span id="val-duration">3 Days</span></label>
+                  <input type="range" id="filter-duration" min="1" max="10" value="3" class="range-slider">
+                </div>
+                <div class="filter-group">
+                  <label for="filter-accessibility">Accessibility</label>
+                  <select id="filter-accessibility">
+                    <option value="standard">Standard</option>
+                    <option value="wheelchair">Wheelchair Accessible</option>
+                    <option value="kid-friendly">Kid Friendly</option>
+                    <option value="senior-friendly">Senior Friendly</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="filter-popularity">Popularity</label>
+                  <select id="filter-popularity">
+                    <option value="all">All Locations</option>
+                    <option value="famous">World Famous</option>
+                    <option value="local">Local Favorites</option>
+                    <option value="gems">Hidden Gems</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <!-- Quick Action Chips -->
+          <div class="search-chips-container">
+            <span class="chips-label">Themes:</span>
+            <div class="search-chips">
+              <button class="chip" data-style="Beaches"><span class="chip-emoji">🏖</span> Beaches</button>
+              <button class="chip" data-style="Nature"><span class="chip-emoji">🏔</span> Mountains</button>
+              <button class="chip" data-style="Nature"><span class="chip-emoji">🌿</span> Nature</button>
+              <button class="chip" data-style="Historical"><span class="chip-emoji">🏛</span> Historical</button>
+              <button class="chip" data-style="Food"><span class="chip-emoji">🍽</span> Food</button>
+              <button class="chip" data-style="Shopping"><span class="chip-emoji">🛍</span> Shopping</button>
+              <button class="chip" data-style="Adventure"><span class="chip-emoji">🎢</span> Adventure</button>
+              <button class="chip" data-style="Honeymoon"><span class="chip-emoji">💕</span> Honeymoon</button>
+              <button class="chip" data-style="Family"><span class="chip-emoji">👨‍👩‍👧</span> Family</button>
+              <button class="chip" data-style="Weekend Trips"><span class="chip-emoji">🎉</span> Weekend Trips</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Welcome Screen (Default State) -->
+        <div id="welcome-state" class="welcome-panel">
+          <div class="welcome-gfx">
+            <div class="radar-ring ring-1"></div>
+            <div class="radar-ring ring-2"></div>
+            <div class="radar-ring ring-3"></div>
+            <div class="welcome-planet"></div>
+          </div>
+          <h2>Plan Your Next Expedition</h2>
+          <p>Select a travel style, adjust your timeline parameters, and harness the power of custom AI vectors to map
+            out a seamless journey.</p>
+
+          <h3 class="suggestions-heading">Popular Vector Channels</h3>
+          <div class="suggestions-grid">
+
+            <button class="glass-panel glass-panel-interactive suggestion-card" data-city="Tokyo" data-style="Adventure"
+              style="background-color: rgba(26, 21, 44, 0.4);">
+              <div class="suggestion-bg-mesh"
+                style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?auto=format&fit=crop&w=400&q=80')">
+              </div>
+              <span>Adventure</span>
+              <h4>Tokyo, JP</h4>
+            </button>
+
+            <button class="glass-panel glass-panel-interactive suggestion-card" data-city="Paris" data-style="Romantic"
+              style="background-color: rgba(26, 21, 44, 0.4);">
+              <div class="suggestion-bg-mesh"
+                style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=400&q=80')">
+              </div>
+              <span>Romantic</span>
+              <h4>Paris, FR</h4>
+            </button>
+
+            <button class="glass-panel glass-panel-interactive suggestion-card" data-city="Reykjavik"
+              data-style="Adventure" style="background-color: rgba(26, 21, 44, 0.4);">
+              <div class="suggestion-bg-mesh"
+                style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=400&q=80')">
+              </div>
+              <span>Nature</span>
+              <h4>Reykjavik, IS</h4>
+            </button>
+
+            <button class="glass-panel glass-panel-interactive suggestion-card" data-city="Cairo" data-style="Cultural"
+              style="background-color: rgba(26, 21, 44, 0.4);">
+              <div class="suggestion-bg-mesh"
+                style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=400&q=80')">
+              </div>
+              <span>Cultural</span>
+              <h4>Cairo, EG</h4>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Cyber Loader Screen -->
+        <div id="loading-state" class="glass-panel loader-panel" style="display: none;">
+          <div class="loader-scan">
+            <i data-lucide="orbit" style="color: var(--accent-cyan); width: 32px; height: 32px;"></i>
+          </div>
+          <h3>Consulting Neural Networks</h3>
+          <p id="loader-message">Mapping destinations, generating transit pathways, and packing essentials...</p>
+        </div>
+
+        <!-- Results Grid Layout (Visible on Output) -->
+        <div id="results-state" class="results-grid-layout" style="display: none;">
+
+          <!-- Cinematic Interactive Map Block -->
+          <div class="glass-panel map-hud-panel">
+            <div id="leaflet-map" class="leaflet-map-canvas"></div>
+
+            <!-- Floating HUD Controls -->
+            <div class="map-hud-overlay glass-panel">
+              <h4 class="hud-title"><i data-lucide="navigation"></i> Transit Vector HUD</h4>
+              <div class="hud-stats-grid">
+                <div class="hud-stat">
+                  <span class="hud-label">Distance</span>
+                  <span id="hud-val-distance" class="hud-val">--- km</span>
+                </div>
+                <div class="hud-stat">
+                  <span class="hud-label">Est. Time</span>
+                  <span id="hud-val-time" class="hud-val">--- hrs</span>
+                </div>
+                <div class="hud-stat">
+                  <span class="hud-label">Transit Vehicle</span>
+                  <span id="hud-val-vehicle" class="hud-val">---</span>
+                </div>
+                <div class="hud-stat">
+                  <span class="hud-label">Est. Budget</span>
+                  <span id="hud-val-budget" class="hud-val">---</span>
+                </div>
+              </div>
+
+              <!-- Route Options -->
+              <div class="hud-routes-box">
+                <span class="hud-label"><i data-lucide="map"></i> Route Channels:</span>
+                <div id="hud-routes-list" class="hud-routes-list">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+
+              <!-- Weather Forecast -->
+              <div class="hud-weather-box">
+                <span class="hud-label"><i data-lucide="cloud-sun"></i> Weather Forecast:</span>
+                <div id="hud-weather-list" class="hud-weather-list">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Split Columns Layout -->
+          <div class="results-columns-container">
+
+            <!-- Left Column: Day Selection Tabs & Timeline -->
+            <div class="glass-panel itinerary-details-panel">
+              <div class="itinerary-header">
+                <div>
+                  <h3 id="plan-dest-title">Tokyo, Japan</h3>
+                  <span id="plan-style-sub" style="font-size: 0.8rem; color: var(--text-secondary);">Adventure
+                    Expedition</span>
+                </div>
+                <span id="plan-duration-badge" class="itinerary-meta-badge">3 Days</span>
+              </div>
+
+              <!-- Day Selection Tabs -->
+              <div id="day-tabs-container" class="day-tabs">
+                <!-- Rendered Dynamically -->
+              </div>
+
+              <!-- Vertical Timeline Items -->
+              <div class="timeline-container">
+                <div class="timeline-line"></div>
+                <div id="timeline-items" class="timeline-contents-wrapper">
+                  <!-- Rendered Dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Details & Checklists -->
+            <div class="results-side-panels">
+
+              <!-- Local Recommendations Panel -->
+              <div class="glass-panel recommendations-panel">
+                <div class="panel-header-tabs">
+                  <button class="rec-tab active" data-rec-type="hotels"><i data-lucide="hotel"></i> Hotels</button>
+                  <button class="rec-tab" data-rec-type="restaurants"><i data-lucide="utensils"></i> Dining</button>
+                  <button class="rec-tab" data-rec-type="attractions"><i data-lucide="camera"></i> Sights</button>
+                </div>
+                <div id="recommendations-list" class="recommendations-list">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+
+              <!-- Budget Vectors svg -->
+              <div class="glass-panel budget-visualizer-panel">
+                <h4 class="panel-title"><i data-lucide="pie-chart"></i> Budget Vectors</h4>
+
+                <!-- SVG Donut Chart Wrapper -->
+                <div class="chart-container">
+                  <svg id="budget-donut-svg" class="chart-svg" width="140" height="140" viewBox="0 0 140 140">
+                    <!-- Rendered Dynamically -->
+                  </svg>
+                  <div class="chart-center-text">
+                    <span id="chart-center-total" class="chart-center-val">$1,200</span>
+                    <span class="chart-center-lbl">Total</span>
+                  </div>
+                </div>
+
+                <!-- Budget Progress Bars -->
+                <div id="budget-progress-list" class="budget-list">
+                  <!-- Rendered Dynamically -->
+                </div>
+              </div>
+
+              <!-- Packing Checklist Section -->
+              <div class="glass-panel checklist-panel">
+                <h4 class="panel-title"><i data-lucide="check-square"></i> Packing Checklist</h4>
+
+                <!-- Completion score gauge -->
+                <div class="checklist-meta">
+                  <div class="progress-ring-container">
+                    <svg class="progress-ring-svg" width="45" height="45">
+                      <circle class="progress-ring-circle-bg" cx="22.5" cy="22.5" r="18"></circle>
+                      <circle id="checklist-progress-circle" class="progress-ring-circle" cx="22.5" cy="22.5" r="18"
+                        stroke-dasharray="113" stroke-dashoffset="113"></circle>
+                    </svg>
+                    <span id="checklist-percentage" class="progress-ring-text">0%</span>
+                  </div>
+                  <div class="checklist-score-text">
+                    <h4 id="checklist-ratio">0 / 0 Items Packed</h4>
+                    <p>System sync enabled</p>
+                  </div>
+                </div>
+
+                <!-- Packing Category Filters -->
+                <div id="checklist-category-filters" class="checklist-tabs">
+                  <button class="checklist-tab-btn active" data-category="all">All</button>
+                  <button class="checklist-tab-btn" data-category="Essentials">Essentials</button>
+                  <button class="checklist-tab-btn" data-category="Electronics">Tech</button>
+                  <button class="checklist-tab-btn" data-category="Clothing">Wear</button>
+                  <button class="checklist-tab-btn" data-category="Toiletries & Meds">Meds</button>
+                </div>
+
+                <!-- Custom Addition form -->
+                <form id="checklist-add-form" class="checklist-add-form" onsubmit="return false;">
+                  <input type="text" id="checklist-add-input" class="checklist-add-input"
+                    placeholder="Add custom item..." required autocomplete="off">
+                  <button type="submit" class="checklist-add-btn">
+                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                  </button>
+                </form>
+
+                <!-- Checklist scrolling rows -->
+                <div id="checklist-items-box" class="checklist-items-box">
+                  <!-- Rendered Dynamically -->
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- API Key Modal Dialog -->
+  <div id="api-modal" class="modal-overlay">
+    <div class="glass-panel modal-box">
+      <div class="modal-header">
+        <h3><i data-lucide="shield-check"
+            style="color: var(--accent-cyan); width: 20px; height: 20px; vertical-align: middle; margin-right: 6px;"></i>
+          API Credentials</h3>
+        <button id="api-close-btn" class="modal-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>To enable Live AI generation, input a <strong>Gemini API Key</strong>. All operations run locally inside your
+          client browser; your key is never stored on third-party servers.</p>
+        <div class="form-group">
+          <label for="api-key-input">Gemini API Key</label>
+          <div class="input-glow-wrapper">
+            <i data-lucide="key"></i>
+            <input type="password" id="api-key-input" placeholder="AIzaSy...">
+          </div>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">You can acquire a free key at Google AI Studio.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="api-delete-btn" class="btn-secondary"
+          style="border-color: rgba(255, 51, 173, 0.2); color: var(--accent-pink);">Clear Key</button>
+        <button id="api-save-btn" class="btn-primary"
+          style="padding: 8px 16px; width: auto; font-size: 0.85rem; box-shadow: none;">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Main Application Script -->
+  <script type="module" src="js/app.js"></script>
+</body>
+
+</html>
